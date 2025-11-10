@@ -1,12 +1,15 @@
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+
+
 public class TextureGenerator : MonoBehaviour
 {
     public int imageSize = 64;
     private Texture2D texture;
     public int Scaler = 75;
     public AnimationCurve falloffCurve;
-
+    public Texture2D results;
     [System.Serializable]
 
     public struct TerrainType
@@ -21,15 +24,22 @@ public class TextureGenerator : MonoBehaviour
     void Start()
     {
         texture = new Texture2D(imageSize, imageSize);
-        CreatePattern();
-        GenerateTerrain();
-        GetComponent<MeshRenderer>().material.mainTexture = texture;
-        
+        //CreatePattern();
+        float[,] nm = NoiseMapGenerator.GenerateNoise(imageSize, imageSize, Scaler, 4, 0.5f, 2, Vector2.zero, 42);
+
+        results = GenerateColourTerrain(nm);
+        MeshFilter MF = gameObject.AddComponent<MeshFilter>();
+        MF.mesh = MeshGenerator.GenerateTerrain(nm, 20).CreateMesh();
+
+        MeshRenderer MR = gameObject.AddComponent<MeshRenderer>();
+        MR.material.mainTexture = results;
 
 
 
 
     }
+
+    
     public void GenerateFractalTexture()
     {
         for (int y = 0; y < texture.width; y++)
@@ -88,15 +98,15 @@ public class TextureGenerator : MonoBehaviour
 
             }
         }
-        GenerateTerrain();
+
+     //   GenerateTerrain();
     }
 
-    public void GenerateTerrain()
+    public Texture2D GenerateColourTerrain(float[,] nm)
     {
-        float[,] nm = NoiseMapGenerator.GenerateNoise(imageSize, imageSize, Scaler, 4, 0.5f, 2, Vector2.zero, 42);
-
+        
         float[,] fallOffMap = NoiseMapGenerator.GenerateFallOffMap(imageSize, falloffCurve);
-
+        Texture2D texture = new Texture2D(nm.GetLength(0), nm.GetLength(1));
         //merge noise map and falloff map
         for (int y = 0; y < texture.width; y++)
         {
@@ -127,6 +137,7 @@ public class TextureGenerator : MonoBehaviour
 
 
         texture.Apply();    
+        return texture;
     }
 
 }

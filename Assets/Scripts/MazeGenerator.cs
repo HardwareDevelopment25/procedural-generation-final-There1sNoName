@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using UnityEngine;
 
+
 public class MazeGenerator : MonoBehaviour
 {
     System.Random rand;
@@ -10,6 +11,8 @@ public class MazeGenerator : MonoBehaviour
     public GameObject wallPrefab;
     public GameObject floorPrefab;
     private bool[,] maze;
+    public bool Is2D = false;    
+
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -17,10 +20,31 @@ public class MazeGenerator : MonoBehaviour
         rand = new System.Random(seed);
         maze = new bool[size, size];
         GenerateMaze();
-        DrawMaze();
+
+        MeshRenderer mr;
+
+        if (Is2D)
+        {
+            mr = GetComponent<MeshRenderer>();
+            mr.material.mainTexture = GenerationTools.RenderBoolArrayAsTexture(maze);
+        }
+        else
+        {
+            //DrawMazeIn3D();
+        }
+        
+
     }
 
-    void DrawMaze()
+    public void GenerateImageOfNewMaze()
+    {
+        Is2D = true;
+        Start();
+    }
+
+ 
+
+    void DrawMazeIn3D()
     {
         for(int x = 0; x < size; x++)
         {
@@ -42,60 +66,66 @@ public class MazeGenerator : MonoBehaviour
     {
         Stack<Vector2Int> stack = new Stack<Vector2Int>();
 
-        Vector2Int current = new Vector2Int(0, 0);
-
-        maze[current.x, current.y] = true;
-
-        stack.Push(current);
-
-        while (stack.Count > 0)
+        if (maze.Length > 0)
         {
-            current = stack.Pop();
+            Vector2Int current = new Vector2Int(0, 0);
 
-            List<Vector2Int> neighbors = new List<Vector2Int>();
+            maze[current.x, current.y] = true;
 
-            if (current.x > 1 && !maze[current.x - 2, current.y])
+            stack.Push(current);
+
+            while (stack.Count > 0)
             {
-                neighbors.Add(new Vector2Int(current.x - 2, current.y));
-            }
+                current = stack.Pop();
 
-            if (current.x < size - 2 && !maze[current.x + 2, current.y])
-            {
-                neighbors.Add(new Vector2Int(current.x + 2, current.y));
-            }
+                List<Vector2Int> neighbors = new List<Vector2Int>();
 
-            if (current.y > 1 && !maze[current.x, current.y - 2])
-            {
-                neighbors.Add(new Vector2Int(current.x, current.y - 2));
-            }
-
-            if (current.y < size - 2 && !maze[current.x, current.y + 2])
-            {
-                neighbors.Add(new Vector2Int(current.x, current.y + 2));
-
-            }
-
-            if (neighbors.Count > 0)
-            {
-                stack.Push(current);
-                Vector2Int chosen = neighbors[rand.Next(0, neighbors.Count)];
-
-                if (chosen.x == current.x)
+                if (current.x > 1 && !maze[current.x - 2, current.y])
                 {
-                    maze[chosen.x, current.y + 1] = true;
+                    neighbors.Add(new Vector2Int(current.x - 2, current.y));
                 }
-                else
-                {
-                    maze[chosen.x + 1, chosen.y] = true;
 
+                if (current.x < size - 2 && !maze[current.x + 2, current.y])
+                {
+                    neighbors.Add(new Vector2Int(current.x + 2, current.y));
+                }
+
+                if (current.y > 1 && !maze[current.x, current.y - 2])
+                {
+                    neighbors.Add(new Vector2Int(current.x, current.y - 2));
+                }
+
+                if (current.y < size - 2 && !maze[current.x, current.y + 2])
+                {
+                    neighbors.Add(new Vector2Int(current.x, current.y + 2));
 
                 }
 
-                maze[chosen.x, chosen.y] = true;
+                if (neighbors.Count > 0)
+                {
+                    stack.Push(current);
+                    Vector2Int chosen = neighbors[rand.Next(0, neighbors.Count)];
 
-                stack.Push(chosen);
+                    if (chosen.x == current.x)
+                    {
 
+                        maze[chosen.x, current.y + 1] = true;
+                    }
+                    else
+                    {
+
+                        maze[chosen.x + 1, chosen.y] = true;
+
+
+                    }
+
+                    maze[chosen.x, chosen.y] = true;
+
+                    stack.Push(chosen);
+
+                }
             }
+
         }
 
     }

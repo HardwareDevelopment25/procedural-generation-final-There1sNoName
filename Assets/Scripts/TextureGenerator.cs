@@ -9,8 +9,11 @@ public class TextureGenerator : MonoBehaviour
     private Texture2D texture;
     public int Scaler = 75;
     public AnimationCurve falloffCurve;
-    public Texture2D results;
+    public float[,] FinalMap;
+    [Range(1, 6)]
+    public int LOD = 1;
     [System.Serializable]
+    
 
     public struct TerrainType
     {
@@ -25,14 +28,15 @@ public class TextureGenerator : MonoBehaviour
     {
         texture = new Texture2D(imageSize, imageSize);
         //CreatePattern();
-        float[,] nm = NoiseMapGenerator.GenerateNoise(imageSize, imageSize, Scaler, 4, 0.5f, 2, Vector2.zero, 42);
 
-        results = GenerateColourTerrain(nm);
+
+
+        GenerateColourTerrain();
         MeshFilter MF = gameObject.AddComponent<MeshFilter>();
-        MF.mesh = MeshGenerator.GenerateTerrain(nm, 20).CreateMesh();
+        MF.mesh = MeshGenerator.GenerateTerrain(FinalMap, 20, falloffCurve,LOD).CreateMesh();
 
         MeshRenderer MR = gameObject.AddComponent<MeshRenderer>();
-        MR.material.mainTexture = results;
+        MR.material.mainTexture = texture;
 
 
 
@@ -102,34 +106,40 @@ public class TextureGenerator : MonoBehaviour
      //   GenerateTerrain();
     }
 
-    public Texture2D GenerateColourTerrain(float[,] nm)
+    public void GenerateColourTerrain()
     {
-        
+
+        float[,] nm = NoiseMapGenerator.GenerateNoise(imageSize, imageSize, Scaler, 4, 0.5f, 2, Vector2.zero, 42);
         float[,] fallOffMap = NoiseMapGenerator.GenerateFallOffMap(imageSize, falloffCurve);
-        Texture2D texture = new Texture2D(nm.GetLength(0), nm.GetLength(1));
+
+        FinalMap = new float[imageSize, imageSize];
+
         //merge noise map and falloff map
-        for (int y = 0; y < texture.width; y++)
+        for (int x = 0; x < texture.width; x++)
         {
-            for (int x = 0; x < texture.height; x++)
+            for (int y = 0; y < texture.height; y++)
             {
-                nm[x, y] = Mathf.Clamp01(nm[x, y] - fallOffMap[x, y]);
+                FinalMap[x, y] = Mathf.Clamp01(nm[x, y] - fallOffMap[x, y]);
             }
         }
 
 
-        for (int y = 0; y < texture.width; y++)
+        for (int x = 0; x < texture.width; x++)
         {
-            for (int x = 0; x < texture.height; x++)
+            for (int y = 0; y < texture.height; y++)
             {
-                float currentHeight = nm[x, y];
+                float currentHeight = FinalMap[x, y];
+                Color color = Color.black;
+
                 for (int i = 0; i < terrainType.Length; i++)
                 {
                     if (currentHeight <= terrainType[i].height)
                     {
-                        texture.SetPixel(x, y, terrainType[i].color);
+                        color = (terrainType[i].color);
                         break;
                     }
                 }
+                texture.SetPixel(x, y, color);
             }
         }
 
@@ -137,7 +147,8 @@ public class TextureGenerator : MonoBehaviour
 
 
         texture.Apply();    
-        return texture;
+      
     }
+
 
 }
